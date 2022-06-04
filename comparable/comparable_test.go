@@ -1,4 +1,4 @@
-package set
+package comparable
 
 import "testing"
 
@@ -96,6 +96,18 @@ func TestIntersection(t *testing.T) {
 	s4 := s1.Intersection(expected)
 
 	if !s4.Equal(expected) {
+		t.Error()
+	}
+}
+
+func TestDifference(t *testing.T) {
+	s1 := New(1, 2, 3)
+	s2 := New(2, 3, 5)
+	s3 := s1.Difference(s2)
+
+	expected := New(1)
+
+	if !s3.Equal(expected) {
 		t.Error()
 	}
 }

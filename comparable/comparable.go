@@ -1,8 +1,4 @@
-package set
-
-type Hashable[T comparable] interface {
-	Hash() T
-}
+package comparable
 
 type Set[T comparable] struct {
 	set map[T]struct{}
@@ -45,7 +41,7 @@ func (s1 Set[comparable]) Equal(s2 Set[comparable]) bool {
 	return true
 }
 
-func (s *Set[comparable]) Iter() []comparable {
+func (s Set[comparable]) Iter() []comparable {
 	keys := make([]comparable, 0, s.Len())
 	for k := range s.set {
 		keys = append(keys, k)
@@ -88,9 +84,16 @@ func (s1 Set[comparable]) Intersection(s2 Set[comparable]) Set[comparable] {
 		}
 	}
 	return s3
-
 }
 
-func (s1 *Set[comparable]) Difference(s2 *Set[comparable]) {}
+func (s1 Set[comparable]) Difference(s2 Set[comparable]) Set[comparable] {
+	s3 := New[comparable]()
 
-func (s1 *Set[comparable]) Complement(s2 *Set[comparable]) {}
+	for _, val := range s1.Iter() {
+		if !s2.Contains(val) {
+			s3.Add(val)
+		}
+	}
+
+	return s3
+}
