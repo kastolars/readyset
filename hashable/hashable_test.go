@@ -121,3 +121,14 @@ func TestDifference(t *testing.T) {
 		t.Error()
 	}
 }
+
+func TestIsDisjoint(t *testing.T) {
+	th1 := testHashable[int]{1, 2}
+	th2 := testHashable[int]{1, 1}
+	s1 := NewHashable[int](th1)
+	s2 := NewHashable[int](th2)
+
+	if !s1.IsDisjoint(s2) {
+		t.Error()
+	}
+}

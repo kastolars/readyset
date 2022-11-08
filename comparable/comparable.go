@@ -97,3 +97,7 @@ func (s1 Set[comparable]) Difference(s2 Set[comparable]) Set[comparable] {
 
 	return s3
 }
+
+func (s1 Set[comparable]) IsDisjoint(s2 Set[comparable]) bool {
+	return s1.Intersection(s2).Len() == 0
+}

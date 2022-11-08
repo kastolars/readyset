@@ -101,3 +101,7 @@ func (s1 HashableSet[T]) Difference(s2 HashableSet[T]) HashableSet[T] {
 
 	return s3
 }
+
+func (s1 HashableSet[T]) IsDisjoint(s2 HashableSet[T]) bool {
+	return s1.Intersection(s2).Len() == 0
+}

@@ -111,3 +111,12 @@ func TestDifference(t *testing.T) {
 		t.Error()
 	}
 }
+
+func TestIsDisjoint(t *testing.T) {
+	s1 := New(2, 4, 6)
+	s2 := New(1, 3, 5)
+
+	if !s1.IsDisjoint(s2) {
+		t.Error()
+	}
+}
