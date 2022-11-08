@@ -1,12 +1,10 @@
-# Set
+# ReadySet
 
-Set is a package for comparable generic and hashable interface sets with a few operations.
-
-#### Note: Currently there is a bug in Go 1.18 that causes the Add, Remove, and Contains Hashable set operations to panic. The bug is resolved in the Go dev branch but is currently unreleased.
+ReadySet is a package for comparable generic and hashable interface sets with a few operations.
 
 ## Installation
 ```bash
-go get github.com/kastolars/set
+go get github.com/kastolars/readyset
 ```
 
 ## Usage
