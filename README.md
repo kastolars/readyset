@@ -34,12 +34,12 @@ type HashableExample[T comparable] struct {
 }
 
 // Implement the Hashable interface function "Hash"
-func (he HashableExample[T]) Hash() {
-    return he.a + he.b
+func (he HashableExample[T]) Hash() int {
+	return he.a + he.b
 }
 
 he := HashableExample[int]{1, 2}
-s := NewHashable[int](th)
+s := hashable.NewHashable[int](he)
 
 // All set operations function the same as Comparable sets
 ```
