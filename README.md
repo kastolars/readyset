@@ -63,9 +63,24 @@ u, ok := users.Get("ann@example.com")
 
 Because key equality is element equality, adding an element whose key is already present **replaces** the stored element. Operations between two sets compare keys only and expect the same key function on both. `Union` and `Intersection` return the receiver's elements.
 
+## Printing and JSON
+
+Both packages print readably and encode to JSON as arrays, in a stable order (numbers numerically, strings lexically, `keyed` sets by key), so output never depends on map iteration order.
+
+```go
+fmt.Println(readyset.New(10, 2, 1)) // {1, 2, 10}
+
+b, _ := json.Marshal(readyset.New("b", "a")) // ["a","b"]
+
+var tags readyset.Set[string]
+_ = json.Unmarshal([]byte(`["go","sets"]`), &tags) // works as a struct field too
+```
+
+A `keyed` set needs its key function to decode, so create it with `keyed.New` before calling `json.Unmarshal`.
+
 ## Behaviour to know about
 
-- **Order is random.** Go randomises map iteration, so `Slice()` and `All()` return elements in no particular order. Sort the result if you need a stable order.
+- **Iteration order is random.** Go randomises map iteration, so `Slice()` and `All()` return elements in no particular order. Printing and JSON are sorted for you; sort the result yourself if you need a stable order from `Slice()`.
 - **Copies share storage.** Assigning a non-empty set to another variable shares the underlying map. Use `Clone()` for an independent copy.
 - **Not safe for concurrent use.** Guard a set with your own mutex if goroutines share it.
 - **Operations never modify their operands.** `Union`, `Intersection` and the rest return new sets.

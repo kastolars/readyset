@@ -1,18 +1,11 @@
 package readyset_test
 
 import (
+	"encoding/json"
 	"fmt"
-	"sort"
 
 	"github.com/kastolars/readyset"
 )
-
-// show prints the elements in ascending order so example output is stable.
-func show(s readyset.Set[int]) {
-	e := s.Slice()
-	sort.Ints(e)
-	fmt.Println(e)
-}
 
 func ExampleNew() {
 	s := readyset.New(3, 1, 2, 3)
@@ -31,36 +24,36 @@ func ExampleSet_Add() {
 func ExampleSet_Remove() {
 	s := readyset.New(1, 2, 3)
 	s.Remove(1, 9) // 9 is not present; that is not an error
-	show(s)
-	// Output: [2 3]
+	fmt.Println(s)
+	// Output: {2, 3}
 }
 
 func ExampleSet_Union() {
 	a := readyset.New(1, 2, 3)
 	b := readyset.New(3, 4)
-	show(a.Union(b))
-	// Output: [1 2 3 4]
+	fmt.Println(a.Union(b))
+	// Output: {1, 2, 3, 4}
 }
 
 func ExampleSet_Intersection() {
 	a := readyset.New(1, 2, 3)
 	b := readyset.New(2, 3, 4)
-	show(a.Intersection(b))
-	// Output: [2 3]
+	fmt.Println(a.Intersection(b))
+	// Output: {2, 3}
 }
 
 func ExampleSet_Difference() {
 	a := readyset.New(1, 2, 3)
 	b := readyset.New(2, 3, 4)
-	show(a.Difference(b))
-	// Output: [1]
+	fmt.Println(a.Difference(b))
+	// Output: {1}
 }
 
 func ExampleSet_SymmetricDifference() {
 	a := readyset.New(1, 2, 3)
 	b := readyset.New(2, 3, 4)
-	show(a.SymmetricDifference(b))
-	// Output: [1 4]
+	fmt.Println(a.SymmetricDifference(b))
+	// Output: {1, 4}
 }
 
 func ExampleSet_IsSubset() {
@@ -83,4 +76,27 @@ func ExampleSet_Clone() {
 	b.Add(3)
 	fmt.Println(a.Len(), b.Len())
 	// Output: 2 3
+}
+
+func ExampleSet_String() {
+	// Numbers print in numeric order, whatever order they were added in.
+	s := readyset.New(10, 2, 1)
+	fmt.Println(s)
+	// Output: {1, 2, 10}
+}
+
+func ExampleSet_MarshalJSON() {
+	b, _ := json.Marshal(readyset.New("b", "a"))
+	fmt.Println(string(b))
+	// Output: ["a","b"]
+}
+
+func ExampleSet_UnmarshalJSON() {
+	type Config struct {
+		Tags readyset.Set[string] `json:"tags"`
+	}
+	var c Config
+	err := json.Unmarshal([]byte(`{"tags":["go","sets","go"]}`), &c)
+	fmt.Println(err, c.Tags.Len(), c.Tags.Contains("sets"))
+	// Output: <nil> 2 true
 }

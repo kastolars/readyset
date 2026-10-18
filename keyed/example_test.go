@@ -1,6 +1,7 @@
 package keyed_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 
@@ -82,4 +83,35 @@ func ExampleSet_Difference() {
 	admins := keyed.New(byEmail, User{Email: "b@x.io"})
 	fmt.Println(names(staff.Difference(admins)))
 	// Output: [Ann]
+}
+
+func ExampleSet_String() {
+	users := keyed.New(byEmail,
+		User{Email: "b@x.io", Name: "Bob"},
+		User{Email: "a@x.io", Name: "Ann"},
+	)
+	// Elements print in key order.
+	fmt.Println(users)
+	// Output: {{a@x.io Ann []}, {b@x.io Bob []}}
+}
+
+func ExampleSet_MarshalJSON() {
+	users := keyed.New(byEmail,
+		User{Email: "b@x.io", Name: "Bob"},
+		User{Email: "a@x.io", Name: "Ann"},
+	)
+	b, _ := json.Marshal(users)
+	fmt.Println(string(b))
+	// Output: [{"Email":"a@x.io","Name":"Ann","Tags":null},{"Email":"b@x.io","Name":"Bob","Tags":null}]
+}
+
+func ExampleSet_UnmarshalJSON() {
+	type Config struct {
+		Users keyed.Set[string, User] `json:"users"`
+	}
+	// The set needs its key function to decode, so create it with New first.
+	cfg := Config{Users: keyed.New(byEmail)}
+	err := json.Unmarshal([]byte(`{"users":[{"Email":"a@x.io","Name":"Ann"}]}`), &cfg)
+	fmt.Println(err, cfg.Users.Len())
+	// Output: <nil> 1
 }
