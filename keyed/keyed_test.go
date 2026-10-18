@@ -138,7 +138,7 @@ func TestGet(t *testing.T) {
 }
 
 // Slice-bearing structs are not comparable, so they cannot be members of a
-// comparable.Set, but they work here through a key.
+// readyset.Set, but they work here through a key.
 func TestNonComparableElements(t *testing.T) {
 	type doc struct {
 		Name string

@@ -8,7 +8,7 @@ import (
 )
 
 // User is the element type used by the examples. Its Tags field makes it
-// non-comparable, so it could not be a member of a comparable.Set.
+// non-comparable, so it could not be a member of a readyset.Set.
 type User struct {
 	Email string
 	Name  string

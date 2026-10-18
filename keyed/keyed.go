@@ -12,7 +12,7 @@
 // already present replaces the element stored under that key.
 //
 // If your elements are already comparable and you want whole-value equality,
-// use the [github.com/kastolars/readyset/comparable] package instead.
+// use the [github.com/kastolars/readyset] package instead.
 package keyed
 
 // Set is an unordered collection of elements with unique keys.

@@ -8,7 +8,7 @@ import (
 )
 
 // newBytes builds a set whose key is the byte itself, so the algebra can be
-// checked with the same inputs as the comparable package.
+// checked with the same inputs as the readyset package.
 func newBytes(elements ...byte) Set[byte, byte] {
 	return New(func(b byte) byte { return b }, elements...)
 }

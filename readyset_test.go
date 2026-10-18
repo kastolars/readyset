@@ -1,4 +1,4 @@
-package comparable
+package readyset
 
 import (
 	"reflect"

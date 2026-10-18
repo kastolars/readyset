@@ -6,8 +6,8 @@ Two packages, for two situations:
 
 | Package | Use it when | Elements are the same when |
 |---|---|---|
-| [`comparable`](comparable) | your elements are comparable (`int`, `string`, structs of comparable fields, ...) | their values are equal |
-| [`keyed`](keyed) | elements are not comparable (they hold slices or maps), or only part of them, like an ID, defines identity | their keys are equal |
+| [`readyset`](.) | your elements are comparable (`int`, `string`, structs of comparable fields, ...) | their values are equal |
+| [`readyset/keyed`](keyed) | elements are not comparable (they hold slices or maps), or only part of them, like an ID, defines identity | their keys are equal |
 
 Requires Go 1.18 or later. The `All()` iterator methods are available with Go 1.23 or later.
 
@@ -17,13 +17,13 @@ Requires Go 1.18 or later. The `All()` iterator methods are available with Go 1.
 go get github.com/kastolars/readyset
 ```
 
-## `comparable`
+## `readyset`
 
 ```go
-import set "github.com/kastolars/readyset/comparable"
+import "github.com/kastolars/readyset"
 
-a := set.New(1, 2, 3)
-b := set.New(3, 4)
+a := readyset.New(1, 2, 3)
+b := readyset.New(3, 4)
 
 a.Add(5, 6)          // variadic
 a.Remove(1)
@@ -37,13 +37,11 @@ a.IsSubset(b)            // false
 a.IsDisjoint(b)          // false
 a.Equal(b)               // false
 
-var zero set.Set[string] // the zero value is an empty, usable set
+var zero readyset.Set[string] // the zero value is an empty, usable set
 zero.Add("x")
 ```
 
-> Import this package under an alias, as above. A package named `comparable` shadows Go's built-in `comparable` constraint in any file that imports it, so a file that also writes `[T comparable]` will not compile without the alias.
-
-## `keyed`
+## `readyset/keyed`
 
 A key function maps each element to a comparable key. Two elements are the same element exactly when their keys are equal.
 
@@ -53,7 +51,7 @@ import "github.com/kastolars/readyset/keyed"
 type User struct {
     Email string
     Name  string
-    Tags  []string // not comparable, so User cannot go in a comparable.Set
+    Tags  []string // not comparable, so User cannot go in a readyset.Set
 }
 
 users := keyed.New(func(u User) string { return u.Email })

@@ -1,12 +1,4 @@
-// Package comparable provides a generic Set for any comparable type.
-//
-// Importing this package declares the identifier "comparable" in your file,
-// which shadows Go's predeclared constraint of the same name. If the same
-// file also uses "comparable" as a type constraint, import this package under
-// an alias:
-//
-//	import set "github.com/kastolars/readyset/comparable"
-package comparable
+package readyset
 
 // Set is an unordered collection of unique elements.
 //
