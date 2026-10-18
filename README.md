@@ -1,53 +1,91 @@
 # ReadySet
 
-ReadySet is a package for comparable generic and hashable interface sets with a few operations.
+Generic sets for Go, with the usual set logic: union, intersection, difference, symmetric difference, subset and superset checks.
+
+Two packages, for two situations:
+
+| Package | Use it when | Elements are the same when |
+|---|---|---|
+| [`comparable`](comparable) | your elements are comparable (`int`, `string`, structs of comparable fields, ...) | their values are equal |
+| [`keyed`](keyed) | elements are not comparable (they hold slices or maps), or only part of them, like an ID, defines identity | their keys are equal |
+
+Requires Go 1.18 or later. The `All()` iterator methods are available with Go 1.23 or later.
 
 ## Installation
+
 ```bash
 go get github.com/kastolars/readyset
 ```
 
-## Usage
+## `comparable`
 
 ```go
-/// Comparable types
+import set "github.com/kastolars/readyset/comparable"
 
-// Instantiate
-s := New(1, 2, 3, 4)
+a := set.New(1, 2, 3)
+b := set.New(3, 4)
 
-// Add to set
-s.Add(5)
+a.Add(5, 6)          // variadic
+a.Remove(1)
+a.Contains(2)        // true
 
-// Remove from set
-s.Remove(1)
+a.Union(b)               // {2, 3, 4, 5, 6}
+a.Intersection(b)        // {3}
+a.Difference(b)          // {2, 5, 6}
+a.SymmetricDifference(b) // {2, 4, 5, 6}
+a.IsSubset(b)            // false
+a.IsDisjoint(b)          // false
+a.Equal(b)               // false
 
-// Will return false
-s.Contains(1)
+var zero set.Set[string] // the zero value is an empty, usable set
+zero.Add("x")
 ```
+
+> Import this package under an alias, as above. A package named `comparable` shadows Go's built-in `comparable` constraint in any file that imports it, so a file that also writes `[T comparable]` will not compile without the alias.
+
+## `keyed`
+
+A key function maps each element to a comparable key. Two elements are the same element exactly when their keys are equal.
 
 ```go
-/// Hashable structs
+import "github.com/kastolars/readyset/keyed"
 
-// Give your struct a generic type
-type HashableExample[T comparable] struct {
-    a, b int
+type User struct {
+    Email string
+    Name  string
+    Tags  []string // not comparable, so User cannot go in a comparable.Set
 }
 
-// Implement the Hashable interface function "Hash"
-func (he HashableExample[T]) Hash() int {
-	return he.a + he.b
-}
+users := keyed.New(func(u User) string { return u.Email })
+users.Add(User{Email: "ann@example.com", Name: "Ann"})
 
-he := HashableExample[int]{1, 2}
-s := hashable.NewHashable[int](he)
-
-// All set operations function the same as Comparable sets
+users.Contains(User{Email: "ann@example.com"}) // true: only the key is compared
+u, ok := users.Get("ann@example.com")
 ```
+
+Because key equality is element equality, adding an element whose key is already present **replaces** the stored element. Operations between two sets compare keys only and expect the same key function on both. `Union` and `Intersection` return the receiver's elements.
+
+## Behaviour to know about
+
+- **Order is random.** Go randomises map iteration, so `Slice()` and `All()` return elements in no particular order. Sort the result if you need a stable order.
+- **Copies share storage.** Assigning a non-empty set to another variable shares the underlying map. Use `Clone()` for an independent copy.
+- **Not safe for concurrent use.** Guard a set with your own mutex if goroutines share it.
+- **Operations never modify their operands.** `Union`, `Intersection` and the rest return new sets.
+
+## Alternatives
+
+- [`deckarep/golang-set`](https://pkg.go.dev/github.com/deckarep/golang-set/v2): mature, with thread-safe and unsafe variants.
+- [`hashicorp/go-set`](https://pkg.go.dev/github.com/hashicorp/go-set/v2): sets, hash sets and tree sets behind a common interface.
+- A set type for the standard library has been proposed (see [golang/go#47331](https://golang.org/issue/47331) and the follow-up proposals). If one ships, prefer it.
+
+ReadySet is deliberately small: no thread safety, no ordered sets, no shared collection interface.
 
 ## Contributing
+
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
-Please make sure to update tests as appropriate.
+Please make sure to update tests as appropriate. `go test -race ./...` and `gofmt` must pass; CI also runs `staticcheck`.
 
 ## License
-[MIT](https://choosealicense.com/licenses/mit/)
+
+[MIT](LICENSE)
