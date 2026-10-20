@@ -115,3 +115,14 @@ func ExampleSet_UnmarshalJSON() {
 	fmt.Println(err, cfg.Users.Len())
 	// Output: <nil> 1
 }
+
+func ExampleSet_RemoveKey() {
+	users := keyed.New(byEmail,
+		User{Email: "a@x.io", Name: "Ann"},
+		User{Email: "b@x.io", Name: "Bob"},
+	)
+	// Remove by key alone, without building a User.
+	users.RemoveKey("a@x.io")
+	fmt.Println(users.Len(), users.ContainsKey("a@x.io"), users.ContainsKey("b@x.io"))
+	// Output: 1 false true
+}

@@ -71,6 +71,15 @@ func (s Set[K, V]) Remove(elements ...V) {
 	}
 }
 
+// RemoveKey deletes the elements stored under keys. Keys not present are
+// ignored. Unlike [Set.Remove] it needs no element, so removing an element you
+// only know the key of does not require building one.
+func (s Set[K, V]) RemoveKey(keys ...K) {
+	for _, k := range keys {
+		delete(s.items, k)
+	}
+}
+
 // Clear removes every element from the set.
 func (s Set[K, V]) Clear() {
 	for k := range s.items {
@@ -84,11 +93,27 @@ func (s Set[K, V]) Contains(e V) bool {
 	return ok
 }
 
+// ContainsKey reports whether the set holds an element stored under key.
+func (s Set[K, V]) ContainsKey(key K) bool {
+	_, ok := s.items[key]
+	return ok
+}
+
 // Get returns the element stored under key. The boolean reports whether key
 // was present; if it was not, the element is the zero value of V.
 func (s Set[K, V]) Get(key K) (V, bool) {
 	e, ok := s.items[key]
 	return e, ok
+}
+
+// Keys returns the keys of the elements in the set as a new slice, in no
+// particular order. The order can differ between calls.
+func (s Set[K, V]) Keys() []K {
+	keys := make([]K, 0, len(s.items))
+	for k := range s.items {
+		keys = append(keys, k)
+	}
+	return keys
 }
 
 // Len returns the number of elements in the set.

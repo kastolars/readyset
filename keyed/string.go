@@ -10,10 +10,7 @@ import (
 // ordered returns the elements sorted by key, in the stable order used for
 // printing and encoding.
 func (s Set[K, V]) ordered() []V {
-	keys := make([]K, 0, len(s.items))
-	for k := range s.items {
-		keys = append(keys, k)
-	}
+	keys := s.Keys()
 	order.Sort(keys)
 
 	elems := make([]V, len(keys))

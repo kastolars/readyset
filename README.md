@@ -59,6 +59,10 @@ users.Add(User{Email: "ann@example.com", Name: "Ann"})
 
 users.Contains(User{Email: "ann@example.com"}) // true: only the key is compared
 u, ok := users.Get("ann@example.com")
+
+users.ContainsKey("ann@example.com") // true
+users.RemoveKey("ann@example.com")   // remove by key alone, no User needed
+users.Keys()                         // []string{}, in no particular order
 ```
 
 Because key equality is element equality, adding an element whose key is already present **replaces** the stored element. Operations between two sets compare keys only and expect the same key function on both. `Union` and `Intersection` return the receiver's elements.

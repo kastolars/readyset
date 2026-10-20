@@ -266,3 +266,43 @@ func sortedCopy(in []int) []int {
 	sort.Ints(out)
 	return out
 }
+
+func TestRemoveKey(t *testing.T) {
+	s := newPeople(person{1, "a"}, person{2, "b"}, person{3, "c"})
+	s.RemoveKey(1, 3, 99) // 99 is not present; that is not an error
+	if got := ids(s); !reflect.DeepEqual(got, []int{2}) {
+		t.Errorf("after RemoveKey = %v, want [2]", got)
+	}
+	s.RemoveKey() // no-op
+	if s.Len() != 1 {
+		t.Errorf("RemoveKey() with no keys changed the set: %v", ids(s))
+	}
+}
+
+func TestContainsKey(t *testing.T) {
+	s := newPeople(person{7, "grace"})
+	if !s.ContainsKey(7) || s.ContainsKey(8) {
+		t.Error("ContainsKey gave the wrong answer")
+	}
+}
+
+func TestKeys(t *testing.T) {
+	s := newPeople(person{3, "c"}, person{1, "a"}, person{2, "b"})
+	got := s.Keys()
+	sort.Ints(got)
+	if want := []int{1, 2, 3}; !reflect.DeepEqual(got, want) {
+		t.Errorf("Keys() = %v, want %v", got, want)
+	}
+	if n := len(newPeople().Keys()); n != 0 {
+		t.Errorf("Keys() of an empty set has %d keys", n)
+	}
+}
+
+// The by-key methods never call the key function, so they work on a zero value.
+func TestKeyMethodsOnZeroValue(t *testing.T) {
+	var s Set[int, person]
+	s.RemoveKey(1) // must not panic
+	if s.ContainsKey(1) || len(s.Keys()) != 0 {
+		t.Error("zero value should be empty")
+	}
+}
