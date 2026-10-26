@@ -37,3 +37,19 @@ func TestAllStopsEarly(t *testing.T) {
 		t.Errorf("yield called %d times after returning false, want 1", calls)
 	}
 }
+
+func TestCollect(t *testing.T) {
+	key := func(p person) int { return p.ID }
+	got := Collect(key, slices.Values([]person{{1, "old"}, {2, "b"}, {1, "new"}}))
+
+	if want := []int{1, 2}; !reflect.DeepEqual(ids(got), want) {
+		t.Errorf("Collect ids = %v, want %v", ids(got), want)
+	}
+	if p, _ := got.Get(1); p.Name != "new" {
+		t.Errorf("Get(1) = %q, want the last element with that key", p.Name)
+	}
+	if !Collect(key, got.All()).Equal(got) {
+		t.Error("Collect(key, s.All()) != s")
+	}
+	mustPanic(t, "nil key function", func() { Collect[int, person](nil, slices.Values([]person{})) })
+}

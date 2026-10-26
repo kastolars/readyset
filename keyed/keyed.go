@@ -102,6 +102,43 @@ func (s Set[K, V]) RemoveSet(other Set[K, V]) {
 	}
 }
 
+// RetainSet deletes the elements whose keys are not also in other. It is the
+// in-place counterpart of [Set.Intersection]: afterwards s holds what
+// s.Intersection(other) would have returned, and other is not modified.
+func (s Set[K, V]) RetainSet(other Set[K, V]) {
+	for k := range s.items {
+		if _, ok := other.items[k]; !ok {
+			delete(s.items, k)
+		}
+	}
+}
+
+// RemoveFunc deletes every element for which remove returns true and reports
+// how many it deleted. remove must not modify the set.
+func (s Set[K, V]) RemoveFunc(remove func(V) bool) int {
+	n := 0
+	for k, e := range s.items {
+		if remove(e) {
+			delete(s.items, k)
+			n++
+		}
+	}
+	return n
+}
+
+// Pop removes and returns an arbitrary element of the set. The boolean is false
+// if the set was empty. Which element is returned is unspecified and can differ
+// between calls, so use it to drain a worklist, not to pick a particular
+// element.
+func (s Set[K, V]) Pop() (V, bool) {
+	for k, e := range s.items {
+		delete(s.items, k)
+		return e, true
+	}
+	var zero V
+	return zero, false
+}
+
 // Clear removes every element from the set.
 func (s Set[K, V]) Clear() {
 	for k := range s.items {
@@ -119,6 +156,28 @@ func (s Set[K, V]) Contains(e V) bool {
 func (s Set[K, V]) ContainsKey(key K) bool {
 	_, ok := s.items[key]
 	return ok
+}
+
+// ContainsAll reports whether the set holds an element with the same key as
+// each of elements. It is true when elements is empty.
+func (s Set[K, V]) ContainsAll(elements ...V) bool {
+	for _, e := range elements {
+		if !s.Contains(e) {
+			return false
+		}
+	}
+	return true
+}
+
+// ContainsAny reports whether the set holds an element with the same key as at
+// least one of elements. It is false when elements is empty.
+func (s Set[K, V]) ContainsAny(elements ...V) bool {
+	for _, e := range elements {
+		if s.Contains(e) {
+			return true
+		}
+	}
+	return false
 }
 
 // Get returns the element stored under key. The boolean reports whether key
@@ -171,6 +230,18 @@ func (s Set[K, V]) IsSuperset(other Set[K, V]) bool {
 	return other.IsSubset(s)
 }
 
+// IsProperSubset reports whether s is a subset of other and the two are not
+// equal, that is, other has at least one key that s lacks.
+func (s Set[K, V]) IsProperSubset(other Set[K, V]) bool {
+	return s.Len() < other.Len() && s.IsSubset(other)
+}
+
+// IsProperSuperset reports whether s is a superset of other and the two are not
+// equal, that is, s has at least one key that other lacks.
+func (s Set[K, V]) IsProperSuperset(other Set[K, V]) bool {
+	return other.IsProperSubset(s)
+}
+
 // IsDisjoint reports whether s and other have no keys in common.
 func (s Set[K, V]) IsDisjoint(other Set[K, V]) bool {
 	small, large := s, other
@@ -204,6 +275,18 @@ func (s Set[K, V]) Clone() Set[K, V] {
 	return c
 }
 
+// Filter returns a new set of the elements for which keep returns true. It uses
+// the key function of s.
+func (s Set[K, V]) Filter(keep func(V) bool) Set[K, V] {
+	f := s.like(0)
+	for k, e := range s.items {
+		if keep(e) {
+			f.items[k] = e
+		}
+	}
+	return f
+}
+
 // Union returns a new set of the keys that are in s, in other, or in both.
 // For a key in both, the element from s is kept.
 func (s Set[K, V]) Union(other Set[K, V]) Set[K, V] {
@@ -220,7 +303,11 @@ func (s Set[K, V]) Union(other Set[K, V]) Set[K, V] {
 // Intersection returns a new set of the keys that are in both s and other.
 // The elements come from s.
 func (s Set[K, V]) Intersection(other Set[K, V]) Set[K, V] {
-	i := s.like(0)
+	size := len(s.items) // the result cannot be larger than the smaller set
+	if len(other.items) < size {
+		size = len(other.items)
+	}
+	i := s.like(size)
 	if len(s.items) <= len(other.items) {
 		for k, e := range s.items {
 			if _, ok := other.items[k]; ok {
@@ -240,7 +327,7 @@ func (s Set[K, V]) Intersection(other Set[K, V]) Set[K, V] {
 
 // Difference returns a new set of the keys that are in s but not in other.
 func (s Set[K, V]) Difference(other Set[K, V]) Set[K, V] {
-	d := s.like(0)
+	d := s.like(len(s.items))
 	for k, e := range s.items {
 		if _, ok := other.items[k]; !ok {
 			d.items[k] = e

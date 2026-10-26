@@ -17,3 +17,13 @@ func (s Set[T]) All() iter.Seq[T] {
 		}
 	}
 }
+
+// Collect returns a new set of the elements yielded by seq. It is available
+// when building with Go 1.23 or later.
+func Collect[T comparable](seq iter.Seq[T]) Set[T] {
+	s := Set[T]{set: make(map[T]struct{})}
+	for e := range seq {
+		s.set[e] = struct{}{}
+	}
+	return s
+}

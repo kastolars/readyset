@@ -14,6 +14,8 @@ type Set[S any] interface {
 	Equal(S) bool
 	IsSubset(S) bool
 	IsSuperset(S) bool
+	IsProperSubset(S) bool
+	IsProperSuperset(S) bool
 	IsDisjoint(S) bool
 	Union(S) S
 	Intersection(S) S
@@ -77,6 +79,9 @@ func Check[S Set[S]](t testing.TB, newSet func(...byte) S, x, y, z []byte) {
 	check("a∩b⊆a", a.Intersection(b).IsSubset(a))
 	check("a⊆b ⇔ a∩b = a", a.IsSubset(b) == a.Intersection(b).Equal(a))
 	check("a⊆b ⇔ b⊇a", a.IsSubset(b) == b.IsSuperset(a))
+	check("a⊂b ⇔ a⊆b and a≠b", a.IsProperSubset(b) == (a.IsSubset(b) && !a.Equal(b)))
+	check("a⊂b ⇔ b⊃a", a.IsProperSubset(b) == b.IsProperSuperset(a))
+	check("a⊄a", !a.IsProperSubset(a) && !a.IsProperSuperset(a))
 	check("a∖b is disjoint from b", a.Difference(b).IsDisjoint(b))
 	check("disjoint ⇔ a∩b = ∅", a.IsDisjoint(b) == a.Intersection(b).IsEmpty())
 	check("a⊆b and b⊆a ⇔ a = b", (a.IsSubset(b) && b.IsSubset(a)) == a.Equal(b))
