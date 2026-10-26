@@ -150,3 +150,37 @@ func ExampleSet_RemoveKey() {
 	fmt.Println(users.Len(), users.ContainsKey("a@x.io"), users.ContainsKey("b@x.io"))
 	// Output: 1 false true
 }
+
+func ExampleSet_RetainSet() {
+	team := keyed.New(byEmail,
+		User{Email: "a@x.io", Name: "Ann"},
+		User{Email: "b@x.io", Name: "Bob"},
+	)
+	active := keyed.New(byEmail, User{Email: "b@x.io"})
+	team.RetainSet(active)
+	fmt.Println(names(team))
+	// Output: [Bob]
+}
+
+func ExampleSet_Filter() {
+	team := keyed.New(byEmail,
+		User{Email: "a@x.io", Name: "Ann", Tags: []string{"admin"}},
+		User{Email: "b@x.io", Name: "Bob"},
+	)
+	admins := team.Filter(func(u User) bool { return len(u.Tags) > 0 })
+	fmt.Println(names(admins))
+	// Output: [Ann]
+}
+
+func ExampleSet_ContainsAll() {
+	team := keyed.New(byEmail,
+		User{Email: "a@x.io", Name: "Ann"},
+		User{Email: "b@x.io", Name: "Bob"},
+	)
+	// Only the key matters, so a User carrying just an email is enough.
+	fmt.Println(team.ContainsAll(User{Email: "a@x.io"}, User{Email: "b@x.io"}))
+	fmt.Println(team.ContainsAny(User{Email: "z@x.io"}))
+	// Output:
+	// true
+	// false
+}

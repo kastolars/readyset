@@ -114,3 +114,56 @@ func ExampleSet_UnmarshalJSON() {
 	fmt.Println(err, c.Tags.Len(), c.Tags.Contains("sets"))
 	// Output: <nil> 2 true
 }
+
+func ExampleSet_RetainSet() {
+	granted := readyset.New("read", "write", "admin")
+	granted.RetainSet(readyset.New("read", "write", "delete"))
+	fmt.Println(granted)
+	// Output: {read, write}
+}
+
+func ExampleSet_RemoveFunc() {
+	s := readyset.New(1, 2, 3, 4, 5, 6)
+	removed := s.RemoveFunc(func(n int) bool { return n%2 == 0 })
+	fmt.Println(removed, s)
+	// Output: 3 {1, 3, 5}
+}
+
+func ExampleSet_Filter() {
+	s := readyset.New(1, 2, 3, 4, 5, 6)
+	fmt.Println(s.Filter(func(n int) bool { return n > 4 }))
+	// Output: {5, 6}
+}
+
+func ExampleSet_Pop() {
+	// Pop drains a worklist: process each item once, in no particular order.
+	todo := readyset.New("a", "b", "c")
+	n := 0
+	for {
+		_, ok := todo.Pop()
+		if !ok {
+			break
+		}
+		n++
+	}
+	fmt.Println(n, todo.IsEmpty())
+	// Output: 3 true
+}
+
+func ExampleSet_ContainsAll() {
+	s := readyset.New(1, 2, 3)
+	fmt.Println(s.ContainsAll(1, 2), s.ContainsAll(1, 9))
+	// Output: true false
+}
+
+func ExampleSet_ContainsAny() {
+	s := readyset.New(1, 2, 3)
+	fmt.Println(s.ContainsAny(9, 3), s.ContainsAny(8, 9))
+	// Output: true false
+}
+
+func ExampleSet_IsProperSubset() {
+	a, b := readyset.New(1, 2), readyset.New(1, 2, 3)
+	fmt.Println(a.IsSubset(a), a.IsProperSubset(a), a.IsProperSubset(b))
+	// Output: true false true
+}

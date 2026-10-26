@@ -10,6 +10,11 @@
 //	fmt.Println(a.Union(b))        // {1, 2, 3, 4}
 //	fmt.Println(a.Intersection(b)) // {3}
 //
+// Union, difference and intersection also have in-place forms: [Set.AddSet],
+// [Set.RemoveSet] and [Set.RetainSet] update a set instead of returning a new one. [Set.Filter], [Set.RemoveFunc] and [Set.Pop] select, delete and
+// drain elements, and [Sorted] and [Collect] convert to and from ordered slices
+// and iterators on the Go versions that support them.
+//
 // For elements that are not comparable, or that are identified by only part of
 // their value such as an ID, use [github.com/kastolars/readyset/keyed].
 //
