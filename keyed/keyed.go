@@ -80,6 +80,28 @@ func (s Set[K, V]) RemoveKey(keys ...K) {
 	}
 }
 
+// AddSet inserts every element of other into the set. For a key present in
+// both sets the element from other replaces the one in s, exactly as if each
+// had been passed to [Set.Add]. This differs from [Set.Union], which keeps the
+// receiver's element. Both sets must use the same key function.
+func (s Set[K, V]) AddSet(other Set[K, V]) {
+	if len(other.items) > 0 && s.items == nil {
+		panic("keyed: Set must be created with New")
+	}
+	for k, e := range other.items {
+		s.items[k] = e
+	}
+}
+
+// RemoveSet deletes the elements stored under the keys of other. It is the
+// in-place counterpart of [Set.Difference]: afterwards s holds what
+// s.Difference(other) would have returned, and other is not modified.
+func (s Set[K, V]) RemoveSet(other Set[K, V]) {
+	for k := range other.items {
+		delete(s.items, k)
+	}
+}
+
 // Clear removes every element from the set.
 func (s Set[K, V]) Clear() {
 	for k := range s.items {

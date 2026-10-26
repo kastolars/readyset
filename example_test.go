@@ -28,6 +28,20 @@ func ExampleSet_Remove() {
 	// Output: {2, 3}
 }
 
+func ExampleSet_AddSet() {
+	all := readyset.New(1, 2)
+	all.AddSet(readyset.New(2, 3))
+	fmt.Println(all)
+	// Output: {1, 2, 3}
+}
+
+func ExampleSet_RemoveSet() {
+	all := readyset.New(1, 2, 3)
+	all.RemoveSet(readyset.New(2, 9))
+	fmt.Println(all)
+	// Output: {1, 3}
+}
+
 func ExampleSet_Union() {
 	a := readyset.New(1, 2, 3)
 	b := readyset.New(3, 4)

@@ -38,6 +38,27 @@ func (s *Set[T]) Remove(elements ...T) {
 	}
 }
 
+// AddSet inserts every element of other into the set. It is the in-place
+// counterpart of [Set.Union]: afterwards s holds what s.Union(other) would have
+// returned, and other is not modified.
+func (s *Set[T]) AddSet(other Set[T]) {
+	if s.set == nil {
+		s.set = make(map[T]struct{}, len(other.set))
+	}
+	for e := range other.set {
+		s.set[e] = struct{}{}
+	}
+}
+
+// RemoveSet deletes every element of other from the set. It is the in-place
+// counterpart of [Set.Difference]: afterwards s holds what s.Difference(other)
+// would have returned, and other is not modified.
+func (s *Set[T]) RemoveSet(other Set[T]) {
+	for e := range other.set {
+		delete(s.set, e)
+	}
+}
+
 // Clear removes every element from the set.
 func (s *Set[T]) Clear() {
 	for e := range s.set {
