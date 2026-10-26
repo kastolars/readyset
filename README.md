@@ -9,7 +9,7 @@ Two packages, for two situations:
 | [`readyset`](.) | your elements are comparable (`int`, `string`, structs of comparable fields, ...) | their values are equal |
 | [`readyset/keyed`](keyed) | elements are not comparable (they hold slices or maps), or only part of them, like an ID, defines identity | their keys are equal |
 
-Requires Go 1.18 or later. The `All()` iterator methods are available with Go 1.23 or later.
+Requires Go 1.18 or later. `Sorted` needs Go 1.21 or later, and the `All()` iterator methods need Go 1.23 or later.
 
 ## Installation
 
@@ -36,6 +36,10 @@ a.SymmetricDifference(b) // {2, 4, 5, 6}
 a.IsSubset(b)            // false
 a.IsDisjoint(b)          // false
 a.Equal(b)               // false
+
+a.AddSet(b)              // in place: a is now the union, {2, 3, 4, 5, 6}
+a.RemoveSet(b)           // in place: a is now the difference, {2, 5, 6}
+readyset.Sorted(a)       // []int{2, 5, 6}, ascending (Go 1.21+)
 
 var zero readyset.Set[string] // the zero value is an empty, usable set
 zero.Add("x")
@@ -65,7 +69,7 @@ users.RemoveKey("ann@example.com")   // remove by key alone, no User needed
 users.Keys()                         // []string{}, in no particular order
 ```
 
-Because key equality is element equality, adding an element whose key is already present **replaces** the stored element. Operations between two sets compare keys only and expect the same key function on both. `Union` and `Intersection` return the receiver's elements.
+Because key equality is element equality, adding an element whose key is already present **replaces** the stored element, and `AddSet` follows the same rule. Operations between two sets compare keys only and expect the same key function on both. `Union` and `Intersection` return the receiver's elements. `keyed.Sorted(users)` returns the elements in ascending key order (Go 1.21+).
 
 ## Printing and JSON
 
@@ -82,20 +86,39 @@ _ = json.Unmarshal([]byte(`["go","sets"]`), &tags) // works as a struct field to
 
 A `keyed` set needs its key function to decode, so create it with `keyed.New` before calling `json.Unmarshal`.
 
+## Recipes
+
+```go
+// Unique values from a slice. Slice() is in random order; Sorted is not.
+unique := readyset.Sorted(readyset.New(ids...))
+
+// What changed between two snapshots.
+added := current.Difference(previous)
+removed := previous.Difference(current)
+
+// Does the caller hold every permission the action needs?
+if granted.IsSuperset(required) {
+    // ...
+}
+
+// Merge several sources into one set, then drop the blocked values.
+var all readyset.Set[string] // the zero value is ready to use
+for _, src := range sources {
+    all.AddSet(src)
+}
+all.RemoveSet(blocked)
+
+// One record per ID, in ID order. Later records replace earlier ones.
+byID := keyed.New(func(r Record) int { return r.ID }, records...)
+latest := keyed.Sorted(byID)
+```
+
 ## Behaviour to know about
 
 - **Iteration order is random.** Go randomises map iteration, so `Slice()` and `All()` return elements in no particular order. Printing and JSON are sorted for you; sort the result yourself if you need a stable order from `Slice()`.
 - **Copies share storage.** Assigning a non-empty set to another variable shares the underlying map. Use `Clone()` for an independent copy.
 - **Not safe for concurrent use.** Guard a set with your own mutex if goroutines share it.
-- **Operations never modify their operands.** `Union`, `Intersection` and the rest return new sets.
-
-## Alternatives
-
-- [`deckarep/golang-set`](https://pkg.go.dev/github.com/deckarep/golang-set/v2): mature, with thread-safe and unsafe variants.
-- [`hashicorp/go-set`](https://pkg.go.dev/github.com/hashicorp/go-set/v2): sets, hash sets and tree sets behind a common interface.
-- A set type for the standard library has been proposed (see [golang/go#47331](https://golang.org/issue/47331) and the follow-up proposals). If one ships, prefer it.
-
-ReadySet is deliberately small: no thread safety, no ordered sets, no shared collection interface.
+- **Set operations return new sets.** `Union`, `Intersection` and the rest never modify their operands. `AddSet` and `RemoveSet` are the in-place forms of `Union` and `Difference`.
 
 ## Contributing
 
