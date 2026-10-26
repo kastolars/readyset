@@ -48,6 +48,30 @@ func ExampleSet_Add() {
 	// Output: 1 Ann Lee
 }
 
+// AddSet behaves like Add for every element of the argument, so for a key in
+// both sets the argument's element replaces the existing one.
+func ExampleSet_AddSet() {
+	team := keyed.New(byEmail, User{Email: "a@x.io", Name: "Ann"})
+	joiners := keyed.New(byEmail,
+		User{Email: "a@x.io", Name: "Ann Lee"},
+		User{Email: "b@x.io", Name: "Bob"},
+	)
+	team.AddSet(joiners)
+	fmt.Println(names(team))
+	// Output: [Ann Lee Bob]
+}
+
+func ExampleSet_RemoveSet() {
+	team := keyed.New(byEmail,
+		User{Email: "a@x.io", Name: "Ann"},
+		User{Email: "b@x.io", Name: "Bob"},
+	)
+	leavers := keyed.New(byEmail, User{Email: "b@x.io"})
+	team.RemoveSet(leavers)
+	fmt.Println(names(team))
+	// Output: [Ann]
+}
+
 func ExampleSet_Union() {
 	staff := keyed.New(byEmail,
 		User{Email: "a@x.io", Name: "Ann"},
