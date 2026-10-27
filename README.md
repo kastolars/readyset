@@ -2,20 +2,62 @@
 
 Generic sets for Go, with the usual set logic: union, intersection, difference, symmetric difference, subset and superset checks.
 
-Two packages, for two situations:
-
-| Package | Use it when | Elements are the same when |
-|---|---|---|
-| [`readyset`](.) | your elements are comparable (`int`, `string`, structs of comparable fields, ...) | their values are equal |
-| [`readyset/keyed`](keyed) | elements are not comparable (they hold slices or maps), or only part of them, like an ID, defines identity | their keys are equal |
-
-Requires Go 1.23 or later.
+It also handles sets of **records identified by a key**, such as users by email or rows by ID, even when the records themselves cannot be compared with `==`.
 
 ## Installation
 
 ```bash
 go get github.com/kastolars/readyset
 ```
+
+Requires Go 1.23 or later.
+
+## Sets of records
+
+```go
+import "github.com/kastolars/readyset/keyed"
+
+type User struct {
+    Email string
+    Name  string
+    Tags  []string // a slice, so User cannot be compared with ==
+}
+
+byEmail := func(u User) string { return u.Email }
+
+team := keyed.New(byEmail,
+    User{Email: "ann@example.com", Name: "Ann"},
+    User{Email: "bob@example.com", Name: "Bob"},
+)
+oncall := keyed.New(byEmail, User{Email: "bob@example.com"})
+newHires := keyed.New(byEmail, User{Email: "cy@example.com", Name: "Cy"})
+
+team.Contains(User{Email: "ann@example.com"}) // true: only the key is compared
+team.Difference(oncall)                       // Ann
+team.Union(newHires)                          // Ann, Bob and Cy: one User per email
+```
+
+Without this you would keep a `map[string]User`, write union, intersection and difference yourself, and decide by hand what happens when two sources disagree about the same user. In `keyed`, two elements are the same element exactly when their keys are equal, and adding an element whose key is already present **replaces** the stored one.
+
+## Sets of values
+
+When your elements are comparable (`int`, `string`, structs of comparable fields, ...), a plain `readyset.Set` is all you need. Two elements are the same when their values are equal.
+
+```go
+import "github.com/kastolars/readyset"
+
+a := readyset.New(1, 2, 3)
+b := readyset.New(3, 4)
+
+a.Union(b)        // {1, 2, 3, 4}
+a.Intersection(b) // {3}
+a.Difference(b)   // {1, 2}
+```
+
+| Package | Use it when | Elements are the same when |
+|---|---|---|
+| [`readyset`](.) | your elements are comparable | their values are equal |
+| [`readyset/keyed`](keyed) | elements are not comparable (they hold slices or maps), or only part of them, like an ID, defines identity | their keys are equal |
 
 ## `readyset`
 
@@ -60,29 +102,18 @@ zero.Add("x")
 
 ## `readyset/keyed`
 
-A key function maps each element to a comparable key. Two elements are the same element exactly when their keys are equal.
+A key function maps each element to a comparable key. Two elements are the same element exactly when their keys are equal. This continues the example from "Sets of records" above.
 
 ```go
-import "github.com/kastolars/readyset/keyed"
+team.Add(User{Email: "bob@example.com", Name: "Robert"}) // replaces the stored Bob
 
-type User struct {
-    Email string
-    Name  string
-    Tags  []string // not comparable, so User cannot go in a readyset.Set
-}
-
-users := keyed.New(func(u User) string { return u.Email })
-users.Add(User{Email: "ann@example.com", Name: "Ann"})
-
-users.Contains(User{Email: "ann@example.com"}) // true: only the key is compared
-u, ok := users.Get("ann@example.com")
-
-users.ContainsKey("ann@example.com") // true
-users.RemoveKey("ann@example.com")   // remove by key alone, no User needed
-users.Keys()                         // []string{}, in no particular order
+u, ok := team.Get("ann@example.com")  // the stored record, found by key
+team.ContainsKey("ann@example.com")   // true
+team.RemoveKey("ann@example.com")     // remove by key alone, no User needed
+team.Keys()                           // []string{"bob@example.com"}, in no particular order
 ```
 
-Because key equality is element equality, adding an element whose key is already present **replaces** the stored element, and `AddSet` follows the same rule. Operations between two sets compare keys only and expect the same key function on both. `Union` and `Intersection` return the receiver's elements. `keyed.Sorted(users)` returns the elements in ascending key order. `keyed` has the same `RetainSet`, `RemoveFunc`, `Filter`, `Pop`, `ContainsAll`, `ContainsAny` and proper-subset methods, plus `keyed.Collect(key, seq)`.
+`AddSet` follows the same replace rule as `Add`. Operations between two sets compare keys only and expect the same key function on both. `Union` and `Intersection` return the receiver's elements. `keyed.Sorted(team)` returns the elements in ascending key order. `keyed` has the same `RetainSet`, `RemoveFunc`, `Filter`, `Pop`, `ContainsAll`, `ContainsAny` and proper-subset methods, plus `keyed.Collect(key, seq)`.
 
 ## Printing and JSON
 
