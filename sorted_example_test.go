@@ -1,5 +1,3 @@
-//go:build go1.21
-
 package readyset_test
 
 import (

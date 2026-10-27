@@ -1,11 +1,9 @@
-//go:build go1.23
-
 package readyset
 
 import "iter"
 
 // All returns an iterator over the elements of the set, in no particular
-// order. It is available when building with Go 1.23 or later.
+// order.
 //
 // The set must not be modified while iterating over it.
 func (s Set[T]) All() iter.Seq[T] {
@@ -18,8 +16,7 @@ func (s Set[T]) All() iter.Seq[T] {
 	}
 }
 
-// Collect returns a new set of the elements yielded by seq. It is available
-// when building with Go 1.23 or later.
+// Collect returns a new set of the elements yielded by seq.
 func Collect[T comparable](seq iter.Seq[T]) Set[T] {
 	s := Set[T]{set: make(map[T]struct{})}
 	for e := range seq {

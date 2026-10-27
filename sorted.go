@@ -1,5 +1,3 @@
-//go:build go1.21
-
 package readyset
 
 import (
@@ -12,8 +10,7 @@ import (
 // sorts before every other float.
 //
 // Sorted is a function rather than a method because only an ordered element
-// type can be sorted, and a method cannot add that constraint to [Set]. It is
-// available when building with Go 1.21 or later.
+// type can be sorted, and a method cannot add that constraint to [Set].
 func Sorted[T cmp.Ordered](s Set[T]) []T {
 	elements := s.Slice()
 	slices.Sort(elements)
