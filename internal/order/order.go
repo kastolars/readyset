@@ -12,9 +12,11 @@ import (
 //
 // Integers, unsigned integers and floating-point numbers sort numerically
 // (NaN first), and strings sort lexically. Every other value sorts by its
-// default text form, as printed by fmt.Sprint, with its Go-syntax form as a
-// tie-break. Values of different kinds, such as in a slice of any, are grouped
-// by kind, so the result does not depend on the input order.
+// default text form, as printed by fmt.Sprint. Values that still tie, such as
+// an int and an int64 holding the same number, are ordered by their Go-syntax
+// form and then their type name. Values of different kinds, such as in a slice
+// of any, are grouped by kind, so the result does not depend on the input
+// order.
 func Sort[T any](s []T) {
 	if len(s) < 2 {
 		return
@@ -38,6 +40,7 @@ type entry[T any] struct {
 	f     float64
 	str   string // the value itself for strings, otherwise its fmt.Sprint form
 	gostr string // the Go-syntax form, used only to break ties
+	typ   string // the dynamic type's name, the last tie-break
 }
 
 func newEntry[T any](v T) entry[T] {
@@ -47,6 +50,7 @@ func newEntry[T any](v T) entry[T] {
 		e.str = "<nil>"
 		return e
 	}
+	e.typ = rv.Type().String()
 	switch k := rv.Kind(); k {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		e.kind, e.i = reflect.Int, rv.Int()
@@ -70,17 +74,28 @@ func less[T any](a, b entry[T]) bool {
 	}
 	switch a.kind {
 	case reflect.Int:
-		return a.i < b.i
-	case reflect.Uint:
-		return a.u < b.u
-	case reflect.Float64:
-		if a.f != a.f { // a is NaN: it sorts before everything except another NaN
-			return b.f == b.f
+		if a.i != b.i {
+			return a.i < b.i
 		}
-		return a.f < b.f
+	case reflect.Uint:
+		if a.u != b.u {
+			return a.u < b.u
+		}
+	case reflect.Float64:
+		aNaN, bNaN := a.f != a.f, b.f != b.f
+		if aNaN != bNaN { // a NaN sorts before everything except another NaN
+			return aNaN
+		}
+		if !aNaN && a.f != b.f {
+			return a.f < b.f
+		}
+	default:
+		if a.str != b.str {
+			return a.str < b.str
+		}
 	}
-	if a.str != b.str {
-		return a.str < b.str
+	if a.gostr != b.gostr {
+		return a.gostr < b.gostr
 	}
-	return a.gostr < b.gostr
+	return a.typ < b.typ
 }

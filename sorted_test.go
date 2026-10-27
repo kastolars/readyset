@@ -29,10 +29,11 @@ func TestSortedEmpty(t *testing.T) {
 	}
 }
 
-func TestSortedNaNFirst(t *testing.T) {
+// A NaN is not equal to itself, so it never gets into a set.
+func TestSortedIgnoresNaN(t *testing.T) {
 	got := Sorted(New(2.5, math.NaN(), -1))
-	if len(got) != 3 || !math.IsNaN(got[0]) || got[1] != -1 || got[2] != 2.5 {
-		t.Errorf("got %v, want [NaN -1 2.5]", got)
+	if want := []float64{-1, 2.5}; !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, want %v", got, want)
 	}
 }
 

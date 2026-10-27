@@ -4,8 +4,14 @@ package readyset
 //
 // The zero value is an empty set that is ready to use. Methods that modify a
 // set have pointer receivers, so call them on an addressable variable. Copying
-// a non-empty Set copies a reference to the same underlying storage; use
-// [Set.Clone] for an independent copy.
+// a Set that holds or has held elements copies a reference to the same
+// underlying storage; use [Set.Clone] for an independent copy.
+//
+// An element must be equal to itself to be in a set, so [Set.Add] ignores a
+// NaN, or any value containing one: a set could never find or remove it again.
+// If T is an interface type, adding or looking up an element whose dynamic type
+// cannot be compared, such as a slice or a map, panics, as it does for a Go map
+// key.
 //
 // A Set is not safe for concurrent use; use a [SyncSet] to share one between
 // goroutines.
@@ -13,21 +19,25 @@ type Set[T comparable] struct {
 	set map[T]struct{}
 }
 
-// New returns a Set containing elements. Duplicates are ignored.
+// New returns a Set containing elements. Duplicates are ignored, and so is any
+// element that is not equal to itself, such as a NaN.
 func New[T comparable](elements ...T) Set[T] {
 	s := Set[T]{set: make(map[T]struct{}, len(elements))}
-	for _, e := range elements {
-		s.set[e] = struct{}{}
-	}
+	s.Add(elements...)
 	return s
 }
 
-// Add inserts elements into the set. Elements already present are ignored.
+// Add inserts elements into the set. Elements already present are ignored, and
+// so is any element that is not equal to itself, such as a NaN.
 func (s *Set[T]) Add(elements ...T) {
 	if s.set == nil {
 		s.set = make(map[T]struct{}, len(elements))
 	}
 	for _, e := range elements {
+		// e != e only for a NaN or a value containing one.
+		if e != e {
+			continue
+		}
 		s.set[e] = struct{}{}
 	}
 }
@@ -99,9 +109,7 @@ func (s *Set[T]) Pop() (T, bool) {
 
 // Clear removes every element from the set.
 func (s *Set[T]) Clear() {
-	for e := range s.set {
-		delete(s.set, e)
-	}
+	clear(s.set)
 }
 
 // Contains reports whether element is in the set.

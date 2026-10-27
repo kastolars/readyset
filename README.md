@@ -1,5 +1,8 @@
 # ReadySet
 
+[![CI](https://github.com/kastolars/readyset/actions/workflows/ci.yml/badge.svg)](https://github.com/kastolars/readyset/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/kastolars/readyset.svg)](https://pkg.go.dev/github.com/kastolars/readyset)
+
 Generic sets for Go, with the usual set logic: union, intersection, difference, symmetric difference, subset and superset checks.
 
 It also handles sets of **records identified by a key**, such as users by email or rows by ID, even when the records themselves cannot be compared with `==`.
@@ -154,10 +157,10 @@ seen.Contains("a")
   ```
 
 - **Operations between two sets lock both in a fixed order.** `a.Union(b)` and `b.Union(a)` running at once cannot deadlock, and `a.Union(a)` is fine.
-- **Functions you pass in run under the lock.** The callbacks of `Filter`, `RemoveFunc` and `Do` must not call methods on the same set.
+- **Functions you pass in run under the lock.** The callbacks of `Filter`, `RemoveFunc` and `Do` must not call methods on any `SyncSet`, not only the same one: two callbacks that each lock the other's set can deadlock. To combine two sets use `RemoveSet`, `RetainSet`, `Intersection` and the like, which lock both safely, or take a `Snapshot()` of the other set first.
 - **`All()` iterates over a copy** taken when the loop starts, so the loop body can change the set.
-- **`Snapshot()` returns an independent plain `Set`**, for `Sorted` or for code that needs no locking.
-- **Use a pointer and never copy one.** A `SyncSet` contains a lock, and `go vet` reports copies.
+- **`Snapshot()` returns an independent plain `Set`**, for `Sorted` or for code that needs no locking. Its elements are copied by value, so anything they point to (a pointer, or in `keyed` a slice or map inside a record) is still shared, and the lock does not protect it.
+- **Use a pointer and never copy one.** A `SyncSet` contains a lock, and `go vet` reports copies. Hold a `*SyncSet` in a struct field: a value field cannot be copied safely, and `json.Marshal` of the struct passed by value writes `{}` for it.
 
 The lock has a cost, so a plain `Set` stays the default: use it when one goroutine owns the set or you already hold a mutex. Uncontended, the lock adds about 2 ns to a lookup (4.6 to 6.6 ns) and about 6 ns to an `Add` (4.4 to 10 ns). When many cores read the same set at once they contend on the lock, and a lookup averaged about 50 ns with 18 cores. For a set that is read by many goroutines and rarely changes, share an immutable `Snapshot()` instead. The numbers come from `go test -bench SyncCost` on an Apple M5 Pro.
 
@@ -200,10 +203,12 @@ latest := keyed.Sorted(byID)
 ## Behaviour to know about
 
 - **Iteration order is random.** Go randomises map iteration, so `Slice()` and `All()` return elements in no particular order. Printing and JSON are sorted for you; sort the result yourself if you need a stable order from `Slice()`.
-- **Copies share storage.** Assigning a non-empty set to another variable shares the underlying map. Use `Clone()` for an independent copy.
+- **Copies share storage.** Assigning a set that holds, or has held, elements to another variable shares the underlying map. Only a zero-value `Set` that has never held an element copies independently. Use `Clone()` for an independent copy.
+- **Elements must be equal to themselves.** A NaN, or a value containing one, is ignored by `New`, `Add` and `Collect`, because a set could never find or remove it again. In `keyed`, an element whose key is a NaN is ignored.
+- **Sets of interface values can panic.** In a `Set[any]`, adding or looking up a slice, map or function panics, as a Go map key does. Decoding JSON into one returns an error instead.
 - **Result sets are sized for speed.** `Union`, `Intersection` and `Difference` allocate their result for the largest it could be, which avoids regrowing the map. If you keep a small result computed from a very large input, `Clone()` it to release the extra memory.
 - **`Set` is not safe for concurrent use.** Use a `SyncSet` (see above), or guard the set with your own mutex.
-- **Set operations return new sets.** `Union`, `Intersection` and the rest never modify their operands. `AddSet`, `RemoveSet` and `RetainSet` are the in-place forms of `Union`, `Difference` and `Intersection`.
+- **Set operations return new sets.** `Union`, `Intersection` and the rest never modify their operands. `AddSet`, `RemoveSet` and `RetainSet` are the in-place forms of `Union`, `Difference` and `Intersection`. One difference in `keyed`: for a key in both sets, `AddSet` takes the argument's element, like `Add`, while `Union` keeps the receiver's.
 
 ## Contributing
 

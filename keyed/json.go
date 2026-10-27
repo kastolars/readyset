@@ -4,19 +4,23 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
+
+	"github.com/kastolars/readyset/internal/jsonenc"
 )
 
 // MarshalJSON implements [json.Marshaler]. It encodes the set as a JSON array
-// of its elements, ordered by key, so equal sets always encode to the same
-// bytes. An empty set encodes as [].
+// of its elements, ordered by key, so a set encodes the same way whatever its
+// map iteration order. An empty set encodes as [].
 func (s Set[K, V]) MarshalJSON() ([]byte, error) {
-	return json.Marshal(s.ordered())
+	return jsonenc.Marshal(s.ordered())
 }
 
 // UnmarshalJSON implements [json.Unmarshaler]. It decodes a JSON array into
 // the set, replacing its previous contents; if several elements share a key,
 // the last one wins. A JSON null leaves the set unchanged. If decoding fails
-// the set is also left unchanged.
+// the set is also left unchanged, including when a key function returns a value
+// that cannot be a map key.
 //
 // The set needs a key function to decode, so it must have been created with
 // [New]. To decode into a struct field, initialise the field first:
@@ -36,7 +40,24 @@ func (s *Set[K, V]) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &elems); err != nil {
 		return err
 	}
+	fresh, err := s.fromElems(elems)
+	if err != nil {
+		return err
+	}
 	s.Clear()
-	s.Add(elems...)
+	s.AddSet(fresh)
 	return nil
+}
+
+// fromElems makes a set of elems with the key function of s, turning a panic while
+// adding them into an error, so that a failed decode changes nothing.
+func (s Set[K, V]) fromElems(elems []V) (fresh Set[K, V], err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("keyed: cannot decode set: %v", r)
+		}
+	}()
+	fresh = s.like(len(elems))
+	fresh.Add(elems...)
+	return fresh, nil
 }
