@@ -9,7 +9,7 @@ Two packages, for two situations:
 | [`readyset`](.) | your elements are comparable (`int`, `string`, structs of comparable fields, ...) | their values are equal |
 | [`readyset/keyed`](keyed) | elements are not comparable (they hold slices or maps), or only part of them, like an ID, defines identity | their keys are equal |
 
-Requires Go 1.18 or later. `Sorted` needs Go 1.21 or later, and the iterator functions `All()` and `Collect` need Go 1.23 or later.
+Requires Go 1.23 or later.
 
 ## Installation
 
@@ -51,8 +51,8 @@ c.AddSet(a)
 c.RemoveFunc(func(n int) bool { return n > 4 })         // in place; returns how many it removed (2)
 e, ok := c.Pop()                                        // remove and return an arbitrary element
 
-readyset.Sorted(a)                  // []int{2, 5, 6}, ascending (Go 1.21+)
-readyset.Collect(slices.Values(xs)) // a set from any iter.Seq (Go 1.23+)
+readyset.Sorted(a)                  // []int{2, 5, 6}, ascending
+readyset.Collect(slices.Values(xs)) // a set from any iter.Seq
 
 var zero readyset.Set[string] // the zero value is an empty, usable set
 zero.Add("x")
@@ -82,7 +82,7 @@ users.RemoveKey("ann@example.com")   // remove by key alone, no User needed
 users.Keys()                         // []string{}, in no particular order
 ```
 
-Because key equality is element equality, adding an element whose key is already present **replaces** the stored element, and `AddSet` follows the same rule. Operations between two sets compare keys only and expect the same key function on both. `Union` and `Intersection` return the receiver's elements. `keyed.Sorted(users)` returns the elements in ascending key order (Go 1.21+). `keyed` has the same `RetainSet`, `RemoveFunc`, `Filter`, `Pop`, `ContainsAll`, `ContainsAny` and proper-subset methods, plus `keyed.Collect(key, seq)` (Go 1.23+).
+Because key equality is element equality, adding an element whose key is already present **replaces** the stored element, and `AddSet` follows the same rule. Operations between two sets compare keys only and expect the same key function on both. `Union` and `Intersection` return the receiver's elements. `keyed.Sorted(users)` returns the elements in ascending key order. `keyed` has the same `RetainSet`, `RemoveFunc`, `Filter`, `Pop`, `ContainsAll`, `ContainsAny` and proper-subset methods, plus `keyed.Collect(key, seq)`.
 
 ## Printing and JSON
 

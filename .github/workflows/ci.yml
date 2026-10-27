@@ -10,8 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # go.mod declares 1.18; 1.23 also builds the iterator (All) methods.
-        go: ['1.18', '1.23', 'stable']
+        # The oldest Go that go.mod allows, and the latest release.
+        go: ['1.23', 'stable']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5

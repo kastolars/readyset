@@ -303,11 +303,7 @@ func (s Set[K, V]) Union(other Set[K, V]) Set[K, V] {
 // Intersection returns a new set of the keys that are in both s and other.
 // The elements come from s.
 func (s Set[K, V]) Intersection(other Set[K, V]) Set[K, V] {
-	size := len(s.items) // the result cannot be larger than the smaller set
-	if len(other.items) < size {
-		size = len(other.items)
-	}
-	i := s.like(size)
+	i := s.like(min(len(s.items), len(other.items))) // cannot be larger than the smaller set
 	if len(s.items) <= len(other.items) {
 		for k, e := range s.items {
 			if _, ok := other.items[k]; ok {
