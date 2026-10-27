@@ -11,6 +11,9 @@
 // Because key equality is element equality, adding an element whose key is
 // already present replaces the element stored under that key.
 //
+// A [Set] is not safe for concurrent use. [SyncSet], created with [NewSync], is
+// the same set behind a lock, for goroutines that share it.
+//
 // If your elements are already comparable and you want whole-value equality,
 // use the [github.com/kastolars/readyset] package instead.
 package keyed
@@ -25,7 +28,8 @@ package keyed
 // same key function. A set produced by an operation uses the key function of
 // the receiver.
 //
-// A Set is not safe for concurrent use.
+// A Set is not safe for concurrent use; use a [SyncSet] to share one between
+// goroutines.
 type Set[K comparable, V any] struct {
 	key   func(V) K
 	items map[K]V

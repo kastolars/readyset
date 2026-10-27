@@ -99,6 +99,37 @@ _ = json.Unmarshal([]byte(`["go","sets"]`), &tags) // works as a struct field to
 
 A `keyed` set needs its key function to decode, so create it with `keyed.New` before calling `json.Unmarshal`.
 
+## Sharing a set between goroutines
+
+A plain `Set` is not safe for concurrent use. When goroutines share a set, use `SyncSet`, which does the locking for you. Both packages have one: `readyset.NewSync(...)` and `keyed.NewSync(key, ...)`.
+
+```go
+seen := readyset.NewSync[string]() // a *SyncSet; the zero value works too
+
+go func() { seen.Add("a") }()
+seen.Contains("a")
+```
+
+- **Each method is atomic, a sequence of methods is not.** `if !seen.Contains(x) { seen.Add(x) }` is a race, because another goroutine can add `x` in between. `Do` runs several steps under one lock:
+
+  ```go
+  var added bool
+  seen.Do(func(set *readyset.Set[string]) {
+      if !set.Contains("a") {
+          set.Add("a")
+          added = true
+      }
+  })
+  ```
+
+- **Operations between two sets lock both in a fixed order.** `a.Union(b)` and `b.Union(a)` running at once cannot deadlock, and `a.Union(a)` is fine.
+- **Functions you pass in run under the lock.** The callbacks of `Filter`, `RemoveFunc` and `Do` must not call methods on the same set.
+- **`All()` iterates over a copy** taken when the loop starts, so the loop body can change the set.
+- **`Snapshot()` returns an independent plain `Set`**, for `Sorted` or for code that needs no locking.
+- **Use a pointer and never copy one.** A `SyncSet` contains a lock, and `go vet` reports copies.
+
+The lock has a cost, so a plain `Set` stays the default: use it when one goroutine owns the set or you already hold a mutex. Uncontended, the lock adds about 2 ns to a lookup (4.6 to 6.6 ns) and about 6 ns to an `Add` (4.4 to 10 ns). When many cores read the same set at once they contend on the lock, and a lookup averaged about 50 ns with 18 cores. For a set that is read by many goroutines and rarely changes, share an immutable `Snapshot()` instead. The numbers come from `go test -bench SyncCost` on an Apple M5 Pro.
+
 ## Recipes
 
 ```go
@@ -140,7 +171,7 @@ latest := keyed.Sorted(byID)
 - **Iteration order is random.** Go randomises map iteration, so `Slice()` and `All()` return elements in no particular order. Printing and JSON are sorted for you; sort the result yourself if you need a stable order from `Slice()`.
 - **Copies share storage.** Assigning a non-empty set to another variable shares the underlying map. Use `Clone()` for an independent copy.
 - **Result sets are sized for speed.** `Union`, `Intersection` and `Difference` allocate their result for the largest it could be, which avoids regrowing the map. If you keep a small result computed from a very large input, `Clone()` it to release the extra memory.
-- **Not safe for concurrent use.** Guard a set with your own mutex if goroutines share it.
+- **`Set` is not safe for concurrent use.** Use a `SyncSet` (see above), or guard the set with your own mutex.
 - **Set operations return new sets.** `Union`, `Intersection` and the rest never modify their operands. `AddSet`, `RemoveSet` and `RetainSet` are the in-place forms of `Union`, `Difference` and `Intersection`.
 
 ## Contributing

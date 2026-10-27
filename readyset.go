@@ -7,7 +7,8 @@ package readyset
 // a non-empty Set copies a reference to the same underlying storage; use
 // [Set.Clone] for an independent copy.
 //
-// A Set is not safe for concurrent use.
+// A Set is not safe for concurrent use; use a [SyncSet] to share one between
+// goroutines.
 type Set[T comparable] struct {
 	set map[T]struct{}
 }

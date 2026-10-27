@@ -53,3 +53,45 @@ func BenchmarkDifference(b *testing.B) {
 func BenchmarkIsDisjoint(b *testing.B) {
 	benchSizes(b, "IsDisjoint", func(a, c Set[int]) any { return a.IsDisjoint(c) })
 }
+
+// The lock in SyncSet costs a little on every call, which is why Set stays the
+// default. These benchmarks show how much.
+func BenchmarkSyncCost(b *testing.B) {
+	const n = 10_000
+	plain := build(n, 0)
+	shared := NewSync(plain.Slice()...)
+
+	b.Run("Contains/Set", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			sinkBool = plain.Contains(i % (2 * n))
+		}
+	})
+	b.Run("Contains/SyncSet", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			sinkBool = shared.Contains(i % (2 * n))
+		}
+	})
+	b.Run("Contains/SyncSet/parallel", func(b *testing.B) {
+		b.RunParallel(func(pb *testing.PB) {
+			i := 0
+			for pb.Next() {
+				_ = shared.Contains(i % (2 * n))
+				i++
+			}
+		})
+	})
+	b.Run("Add/Set", func(b *testing.B) {
+		var s Set[int]
+		for i := 0; i < b.N; i++ {
+			s.Add(i % n)
+		}
+	})
+	b.Run("Add/SyncSet", func(b *testing.B) {
+		s := NewSync[int]()
+		for i := 0; i < b.N; i++ {
+			s.Add(i % n)
+		}
+	})
+}
+
+var sinkBool bool

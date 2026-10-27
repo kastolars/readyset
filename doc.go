@@ -15,6 +15,9 @@
 // drain elements, and [Sorted] and [Collect] convert to and from ordered slices
 // and iterators on the Go versions that support them.
 //
+// A [Set] is not safe for concurrent use. [SyncSet], created with [NewSync], is
+// the same set behind a lock, for goroutines that share it.
+//
 // For elements that are not comparable, or that are identified by only part of
 // their value such as an ID, use [github.com/kastolars/readyset/keyed].
 //
