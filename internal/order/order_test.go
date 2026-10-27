@@ -100,3 +100,26 @@ func TestSortMixedKindsIsOrderIndependent(t *testing.T) {
 		t.Errorf("kind grouping = %s", got)
 	}
 }
+
+// Values that print the same and have the same number, such as an int and an
+// int64, tie on everything but their type, so the type breaks the tie. Without
+// that the order followed the random order of the input.
+func TestSortTiesAreBrokenByType(t *testing.T) {
+	reference := []any{int8(1), int(1), int64(1), uint8(1), uint(1), float32(1), float64(1), "1"}
+	var first []string
+	for i := 0; i < 200; i++ {
+		in := append([]any(nil), reference...)
+		rand.Shuffle(len(in), func(a, b int) { in[a], in[b] = in[b], in[a] })
+		Sort(in)
+
+		got := make([]string, len(in))
+		for j, v := range in {
+			got[j] = fmt.Sprintf("%T:%v", v, v)
+		}
+		if first == nil {
+			first = got
+		} else if !reflect.DeepEqual(first, got) {
+			t.Fatalf("order depends on the input order:\n%v\n%v", first, got)
+		}
+	}
+}

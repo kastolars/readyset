@@ -107,3 +107,41 @@ func TestOppositeDirectionsDoNotDeadlock(t *testing.T) {
 		wg.Wait()
 	})
 }
+
+// Locking a mutex with itself for reading takes one read lock, not two: a second
+// RLock behind a waiting writer is the deadlock the same-mutex case exists to
+// avoid, and Lock followed by Unlock cannot tell one lock from two.
+func TestSameMutexReadLockedOnce(t *testing.T) {
+	var m RWMutex
+	Lock(&m, &m, false)
+	m.RUnlock() // exactly one read lock should be held
+	if !m.TryLock() {
+		t.Error("Lock(m, m, false) took more than one read lock")
+	} else {
+		m.Unlock()
+	}
+}
+
+// Many goroutines ask a mutex that has never been used for its order at once;
+// they must all be given the same number, or two sets could be locked in
+// different orders by different goroutines.
+func TestOrderConcurrentFirstUse(t *testing.T) {
+	for i := 0; i < 2000; i++ {
+		var m RWMutex
+		const n = 8
+		got := make([]uint64, n)
+		var start, wg sync.WaitGroup
+		start.Add(1)
+		for g := 0; g < n; g++ {
+			wg.Add(1)
+			go func() { defer wg.Done(); start.Wait(); got[g] = m.order() }()
+		}
+		start.Done()
+		wg.Wait()
+		for _, v := range got {
+			if v == 0 || v != got[0] {
+				t.Fatalf("iteration %d: goroutines were given different orders: %v", i, got)
+			}
+		}
+	}
+}

@@ -16,11 +16,15 @@ func (s Set[T]) All() iter.Seq[T] {
 	}
 }
 
-// Collect returns a new set of the elements yielded by seq.
+// Collect returns a new set of the elements yielded by seq. As with [New], an
+// element that is not equal to itself, such as a NaN, is ignored.
 func Collect[T comparable](seq iter.Seq[T]) Set[T] {
-	s := Set[T]{set: make(map[T]struct{})}
+	var s Set[T]
 	for e := range seq {
-		s.set[e] = struct{}{}
+		s.Add(e)
+	}
+	if s.set == nil {
+		s.set = make(map[T]struct{})
 	}
 	return s
 }

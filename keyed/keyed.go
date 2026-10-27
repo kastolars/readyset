@@ -51,6 +51,15 @@ func (s Set[K, V]) like(size int) Set[K, V] {
 	return Set[K, V]{key: s.key, items: make(map[K]V, size)}
 }
 
+// likeEither is like, but takes the key function of other if s has none, so
+// that a set built by combining the zero value with a real set is usable.
+func (s Set[K, V]) likeEither(other Set[K, V], size int) Set[K, V] {
+	if s.key == nil {
+		return other.like(size)
+	}
+	return s.like(size)
+}
+
 // keyOf returns the key of e, with a clear failure for a set not made by New.
 func (s Set[K, V]) keyOf(e V) K {
 	if s.key == nil {
@@ -60,10 +69,16 @@ func (s Set[K, V]) keyOf(e V) K {
 }
 
 // Add inserts elements into the set. An element whose key is already present
-// replaces the element stored under that key.
+// replaces the element stored under that key. An element whose key is not equal
+// to itself, such as a NaN, is ignored: the set could never find or remove it.
 func (s Set[K, V]) Add(elements ...V) {
 	for _, e := range elements {
-		s.items[s.keyOf(e)] = e
+		k := s.keyOf(e)
+		// k != k only for a NaN key or a key containing one.
+		if k != k {
+			continue
+		}
+		s.items[k] = e
 	}
 }
 
@@ -145,9 +160,7 @@ func (s Set[K, V]) Pop() (V, bool) {
 
 // Clear removes every element from the set.
 func (s Set[K, V]) Clear() {
-	for k := range s.items {
-		delete(s.items, k)
-	}
+	clear(s.items)
 }
 
 // Contains reports whether the set holds an element with the same key as e.
@@ -294,7 +307,7 @@ func (s Set[K, V]) Filter(keep func(V) bool) Set[K, V] {
 // Union returns a new set of the keys that are in s, in other, or in both.
 // For a key in both, the element from s is kept.
 func (s Set[K, V]) Union(other Set[K, V]) Set[K, V] {
-	u := s.like(len(s.items) + len(other.items))
+	u := s.likeEither(other, len(s.items)+len(other.items))
 	for k, e := range other.items {
 		u.items[k] = e
 	}
@@ -339,7 +352,7 @@ func (s Set[K, V]) Difference(other Set[K, V]) Set[K, V] {
 // SymmetricDifference returns a new set of the keys that are in exactly one of
 // s and other.
 func (s Set[K, V]) SymmetricDifference(other Set[K, V]) Set[K, V] {
-	d := s.like(0)
+	d := s.likeEither(other, 0)
 	for k, e := range s.items {
 		if _, ok := other.items[k]; !ok {
 			d.items[k] = e

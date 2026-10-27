@@ -31,7 +31,15 @@ import (
 // order, so two goroutines running a.Union(b) and b.Union(a) cannot deadlock,
 // and a.Union(a) is fine. Functions you pass in (to [SyncSet.Filter],
 // [SyncSet.RemoveFunc] and [SyncSet.Do]) run while the lock is held, so they
-// must not call methods on the same set.
+// must not call methods on any SyncSet, not only the same one. A callback that
+// locks a different set does so outside that fixed order, so two callbacks that
+// each use the other's set can deadlock. To combine two sets use a two-set
+// method such as [SyncSet.RemoveSet] or [SyncSet.Intersection], or take a
+// [SyncSet.Snapshot] of the other set before the call.
+//
+// The lock protects the set, not what its elements point to. Elements are
+// copied by value into snapshots, clones and slices, and anything an element
+// holds a reference to, such as a pointer, a slice or a map, is shared and not locked.
 type SyncSet[K comparable, V any] struct {
 	mu  lockorder.RWMutex
 	set Set[K, V]
@@ -94,7 +102,7 @@ func (s *SyncSet[K, V]) RetainSet(other *SyncSet[K, V]) {
 
 // RemoveFunc deletes every element for which remove returns true and reports
 // how many it deleted. remove runs while the set is locked, so it must not call
-// methods on this set.
+// methods on any SyncSet.
 func (s *SyncSet[K, V]) RemoveFunc(remove func(V) bool) int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -129,8 +137,9 @@ func (s *SyncSet[K, V]) Clear() {
 //		}
 //	})
 //
-// fn must not call methods on s, which would deadlock, and must not keep the
-// Set after it returns.
+// fn must not call methods on s, which would deadlock, or on any other SyncSet,
+// which can deadlock too (see [SyncSet]), and must not keep the Set after it
+// returns.
 func (s *SyncSet[K, V]) Do(fn func(Set[K, V])) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -272,7 +281,8 @@ func (s *SyncSet[K, V]) Clone() *SyncSet[K, V] {
 
 // Snapshot returns the elements as a plain, independent [Set], for use with
 // [Sorted] or in code that does not need locking. Later changes to either set
-// do not affect the other.
+// do not affect the other. The elements themselves are copied by value, so
+// anything they refer to is still shared.
 func (s *SyncSet[K, V]) Snapshot() Set[K, V] {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -281,7 +291,7 @@ func (s *SyncSet[K, V]) Snapshot() Set[K, V] {
 
 // Filter returns a new set of the elements for which keep returns true. It uses
 // the key function of s. keep runs while the set is locked, so it must not call
-// methods on this set.
+// methods on any SyncSet.
 func (s *SyncSet[K, V]) Filter(keep func(V) bool) *SyncSet[K, V] {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
