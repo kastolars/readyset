@@ -18,7 +18,15 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
       - run: go vet ./...
-      - run: go test -race -cover ./...
+      # -coverpkg also counts the shared set-law checks, which other packages' tests run.
+      - run: go test -race -coverpkg=./... -coverprofile=coverage.out ./...
+      - name: Report coverage
+        if: matrix.go == 'stable'
+        uses: coverallsapp/github-action@v2
+        with:
+          file: coverage.out
+          format: golang
+          fail-on-error: false # a coverage service outage must not fail the build
 
   lint:
     runs-on: ubuntu-latest
