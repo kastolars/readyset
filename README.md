@@ -3,6 +3,7 @@
 [![CI](https://github.com/kastolars/readyset/actions/workflows/ci.yml/badge.svg)](https://github.com/kastolars/readyset/actions/workflows/ci.yml)
 [![Coverage](https://coveralls.io/repos/github/kastolars/readyset/badge.svg?branch=main)](https://coveralls.io/github/kastolars/readyset?branch=main)
 [![Go Reference](https://pkg.go.dev/badge/github.com/kastolars/readyset.svg)](https://pkg.go.dev/github.com/kastolars/readyset)
+[![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)
 
 Generic sets for Go, with the usual set logic: union, intersection, difference, symmetric difference, subset and superset checks.
 
